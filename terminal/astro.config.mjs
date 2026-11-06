@@ -19,7 +19,6 @@ export default defineConfig({
         output: {
           manualChunks(id) {
             if (id.includes('node_modules/echarts')) return 'echarts';
-            if (id.includes('node_modules/simple-statistics')) return 'stats';
           },
         },
       },
@@ -28,7 +27,7 @@ export default defineConfig({
       sourcemap: process.env.NODE_ENV === 'development',
     },
     optimizeDeps: {
-      include: ['echarts', 'simple-statistics'],
+      include: ['echarts'],
     },
   },
   site: 'https://terminal.finuties.com',
