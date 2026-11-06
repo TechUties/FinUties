@@ -22,7 +22,8 @@ npm run dev
 | Check | Command | Expected |
 | --- | --- | --- |
 | Dev server | `npm run dev` | [http://localhost:4321](http://localhost:4321) returns HTTP **200** on `/` |
-| Unit tests | `npm test` | **8/8** pass |
+| Typecheck | `npm run typecheck` | **0** errors (strict `tsc --noEmit`, enforced in CI) |
+| Unit tests | `npm test` | **15/15** pass |
 | Production build | `npm run build` | Writes static site to `terminal/dist/` |
 | Dependency audit | `npm audit` | **0** critical/high (see [terminal/AUDIT.md](terminal/AUDIT.md) for history and re-run steps) |
 | Dev API proxy | `curl -sS -o /dev/null -w "%{http_code}" http://localhost:4321/health` | **200** while `npm run dev` is running |
@@ -80,6 +81,14 @@ Leave `PUBLIC_API_ORIGIN` unset to keep the hosted default.
 
 Dashboard cards register through `src/lib/card-registry.ts` (`registerCard`). Keep `type` ids stable so saved layouts keep working. Add or edit a module under `src/lib/cards/`.
 
+Card and section renderers build HTML with template strings, so two shared helpers are mandatory:
+
+- `escapeHtml(value)` from `src/lib/html.ts` for every API value you interpolate. Do not add a local `e()`/`esc()` copy; `esc` exported from `explore/layout.ts` and `view-renderers.ts` is the same function under its old name.
+- `toItems<T>(payload)` from `src/lib/html.ts` unwraps `[...]`, `{ items: [...] }` or `{ data: [...] }` and always returns an array.
+- Number and date formatting that more than one card needs goes into `src/lib/format.ts` (`formatShares`, `timeAgo`), with a unit test in `tests/`.
+
+Before you open a PR run `npm run check` (typecheck + tests + build). The typecheck is strict and CI fails on the first type error.
+
 ## Status
 
 Honest snapshot — this is a **community client**, not the open-sourced platform.
@@ -89,7 +98,7 @@ Honest snapshot — this is a **community client**, not the open-sourced platfor
 | **Try it** | Clone → `cd terminal && npm install && npm run dev` → sandbox key or account key on connect page (Node 22.12+). |
 | **Community Terminal** | Open subset of the hosted app. Same `fin_sk_...` key. |
 | **Explore labels** | Conflict, climate, sanctions, and maritime are labeled **(research)** — visible, not a commercial P0 offer. |
-| **CI** | GitHub Actions on push/PR to `main`: notebook static validation + Terminal unit tests. Branch protection is not enabled. |
+| **CI** | GitHub Actions on push/PR to `main`: notebook static validation + Terminal typecheck, unit tests and build. Branch protection is not enabled. |
 | **Not in this repo** | Ingest, collectors, API server, analytics node, trading, ops runbooks. Point the client at the hosted API. |
 | **Not in this client** | Data-ops `/admin` and Workbench `/analyze` stay on the hosted Terminal (`terminal.finuties.com`). This tree does not ship those routes. |
 
