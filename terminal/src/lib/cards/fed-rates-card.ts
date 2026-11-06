@@ -4,20 +4,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as Record<string, unknown>).items || [];
-    if ('data' in raw) return (raw as Record<string, unknown>).data || [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
 
 interface RateSeries {
   name: string;
@@ -76,11 +63,11 @@ registerCard({
 
     return {
       payload: {
-        sofr: sofrRes?.ok ? items(sofrRes.data) : [],
-        effr: effrRes?.ok ? items(effrRes.data) : [],
-        obfr: obfrRes?.ok ? items(obfrRes.data) : [],
-        tgcr: tgcrRes?.ok ? items(tgcrRes.data) : [],
-        bgcr: bgcrRes?.ok ? items(bgcrRes.data) : [],
+        sofr: sofrRes?.ok ? toItems(sofrRes.data) : [],
+        effr: effrRes?.ok ? toItems(effrRes.data) : [],
+        obfr: obfrRes?.ok ? toItems(obfrRes.data) : [],
+        tgcr: tgcrRes?.ok ? toItems(tgcrRes.data) : [],
+        bgcr: bgcrRes?.ok ? toItems(bgcrRes.data) : [],
       },
       tokenCost: totalCost,
       creditsRemaining: credits,
@@ -129,14 +116,14 @@ registerCard({
               <div class="rounded-lg bg-fin-800/50 border border-fin-700/40 p-3">
                 <div class="flex items-start justify-between mb-2">
                   <div>
-                    <div class="text-[10px] text-slate-500 uppercase tracking-wider">${e(s.shortName)}</div>
-                    <div class="text-2xl font-bold tabular-nums text-slate-100">${e(s.current.toFixed(2))}%</div>
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider">${escapeHtml(s.shortName)}</div>
+                    <div class="text-2xl font-bold tabular-nums text-slate-100">${escapeHtml(s.current.toFixed(2))}%</div>
                     <div class="flex items-center gap-2 mt-0.5">
                       ${change !== null ? `<span class="text-[10px] font-mono ${changeColor}">${arrow} ${Math.abs(change).toFixed(3)}%</span>` : ''}
-                      <span class="text-[9px] text-slate-600">${e(latestDate)}</span>
+                      <span class="text-[9px] text-slate-600">${escapeHtml(latestDate)}</span>
                     </div>
                   </div>
-                  <div class="text-[9px] text-slate-600 text-right max-w-[120px]">${e(s.name)}</div>
+                  <div class="text-[9px] text-slate-600 text-right max-w-[120px]">${escapeHtml(s.name)}</div>
                 </div>
                 <div id="${chartIds[i]}" class="w-full h-[60px]"></div>
               </div>`;

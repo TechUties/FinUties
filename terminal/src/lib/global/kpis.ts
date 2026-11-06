@@ -8,10 +8,7 @@ import {
   mapSourcesFor,
 } from './state';
 import type { CategoryId } from '../source-registry';
-
-function esc(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { escapeHtml } from '../html';
 
 const MAX_KPIS = 8;
 
@@ -71,7 +68,7 @@ export function updateKpis(): void {
   for (const kpi of kpis.slice(0, MAX_KPIS)) {
     const div = document.createElement('div');
     div.className = 'bg-fin-800/50 rounded-lg p-1.5 text-center';
-    div.innerHTML = `<div class="text-sm font-bold tabular-nums" style="color:${kpi.color}">${esc(kpi.value)}</div><div class="text-[9px] text-slate-500 leading-tight truncate">${esc(kpi.label)}</div>`;
+    div.innerHTML = `<div class="text-sm font-bold tabular-nums" style="color:${kpi.color}">${escapeHtml(kpi.value)}</div><div class="text-[9px] text-slate-500 leading-tight truncate">${escapeHtml(kpi.label)}</div>`;
     grid.appendChild(div);
   }
 }

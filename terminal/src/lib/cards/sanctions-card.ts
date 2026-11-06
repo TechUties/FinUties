@@ -3,20 +3,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as Record<string, unknown>).items as Record<string, unknown>[] ?? [];
-    if ('data' in raw) return (raw as Record<string, unknown>).data as Record<string, unknown>[] ?? [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
 
 interface SanctionEntry {
   jurisdiction: 'US' | 'EU' | 'UN';
@@ -61,9 +48,9 @@ registerCard({
     const credits = usRes?.creditsRemaining ?? euRes?.creditsRemaining ?? unRes?.creditsRemaining ?? null;
     return {
       payload: {
-        us: usRes?.ok ? items(usRes.data) : [],
-        eu: euRes?.ok ? items(euRes.data) : [],
-        un: unRes?.ok ? items(unRes.data) : [],
+        us: usRes?.ok ? toItems(usRes.data) : [],
+        eu: euRes?.ok ? toItems(euRes.data) : [],
+        un: unRes?.ok ? toItems(unRes.data) : [],
       },
       tokenCost: totalCost,
       creditsRemaining: credits,
@@ -108,15 +95,15 @@ registerCard({
     for (const entry of all.slice(0, 14)) {
       const s = JURIS_STYLE[entry.jurisdiction];
       const typeBadge = entry.entityType !== 'unknown'
-        ? '<span class="text-[9px] text-slate-600 bg-fin-800/60 rounded px-1 py-0.5">' + e(entry.entityType) + '</span>'
+        ? '<span class="text-[9px] text-slate-600 bg-fin-800/60 rounded px-1 py-0.5">' + escapeHtml(entry.entityType) + '</span>'
         : '';
       rows += '<div class="flex items-center gap-2 rounded-lg bg-fin-800/30 border border-fin-700/20 px-3 py-2 hover:bg-fin-800/50 transition-colors">'
         + '<span class="flex-shrink-0 inline-flex items-center rounded border ' + s.bg + ' ' + s.border + ' px-1.5 py-0.5 text-[9px] font-bold ' + s.text + ' min-w-[28px] justify-center">' + entry.jurisdiction + '</span>'
         + '<div class="flex-1 min-w-0">'
-        + '<div class="text-sm text-slate-200 font-medium truncate">' + e(entry.name) + '</div>'
+        + '<div class="text-sm text-slate-200 font-medium truncate">' + escapeHtml(entry.name) + '</div>'
         + '<div class="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500">'
-        + (entry.country ? '<span>' + e(entry.country) + '</span>' : '')
-        + (entry.program ? '<span class="truncate max-w-[150px]">' + e(entry.program) + '</span>' : '')
+        + (entry.country ? '<span>' + escapeHtml(entry.country) + '</span>' : '')
+        + (entry.program ? '<span class="truncate max-w-[150px]">' + escapeHtml(entry.program) + '</span>' : '')
         + '</div></div>' + typeBadge + '</div>';
     }
 
@@ -131,7 +118,7 @@ registerCard({
       + '<div class="text-slate-500">EU</div><div><div class="h-1.5 rounded bg-indigo-400/70" style="width:' + pct(counts.EU).toFixed(1) + '%"></div></div>'
       + '<div class="text-slate-500">UN</div><div><div class="h-1.5 rounded bg-cyan-400/70" style="width:' + pct(counts.UN).toFixed(1) + '%"></div></div>'
       + '</div>'
-      + (topEntity ? '<div class="mt-1 text-[10px] text-slate-500">Top entity type: <span class="text-slate-300">' + e(topEntity[0]) + '</span> (' + topEntity[1] + ')</div>' : '')
+      + (topEntity ? '<div class="mt-1 text-[10px] text-slate-500">Top entity type: <span class="text-slate-300">' + escapeHtml(topEntity[0]) + '</span> (' + topEntity[1] + ')</div>' : '')
       + '</div>'
       + '<div class="flex items-center justify-between px-1">'
       + '<div class="flex items-center gap-1.5 flex-wrap">' + badges + '</div>'

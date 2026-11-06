@@ -4,20 +4,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as Record<string, unknown>).items as Record<string, unknown>[] ?? [];
-    if ('data' in raw) return (raw as Record<string, unknown>).data as Record<string, unknown>[] ?? [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
 
 interface EnergySeries {
   id: string;
@@ -86,7 +73,7 @@ registerCard({
   },
 
   render(container, data) {
-    const rows = items(data.payload);
+    const rows = toItems(data.payload);
     const series = groupBySeries(rows);
 
     if (series.length === 0) {
@@ -102,11 +89,11 @@ registerCard({
         maximumFractionDigits: 2,
       });
       return `<div class="rounded-lg ${c.bg} border ${c.border} p-3">
-        <div class="text-[10px] text-slate-500 uppercase tracking-wider truncate">${e(s.label)}</div>
-        <div class="text-xl font-bold tabular-nums text-slate-100 mt-1">${e(fmtVal)}</div>
+        <div class="text-[10px] text-slate-500 uppercase tracking-wider truncate">${escapeHtml(s.label)}</div>
+        <div class="text-xl font-bold tabular-nums text-slate-100 mt-1">${escapeHtml(fmtVal)}</div>
         <div class="flex items-center gap-2 mt-0.5 text-[9px]">
-          <span class="${c.text}">${e(s.units)}</span>
-          <span class="text-slate-600">${e(s.period)}</span>
+          <span class="${c.text}">${escapeHtml(s.units)}</span>
+          <span class="text-slate-600">${escapeHtml(s.period)}</span>
         </div>
       </div>`;
     }).join('');

@@ -4,9 +4,7 @@
  */
 import { registerCard, type CardData, type ViewType } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function esc(s: string): string { return String(s ?? '').replace(/[&<>"]/g, c => _E[c]); }
+import { escapeHtml, toItems } from '../html';
 
 function num(v: unknown): number { const n = Number(v); return isNaN(n) ? 0 : n; }
 function fmtK(n: number): string {
@@ -84,15 +82,6 @@ function parseSentiment(rows: CotRow[]): Sentiment[] {
   return sentiments;
 }
 
-function items(raw: unknown): CotRow[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return ((raw as Record<string, unknown>).items as CotRow[]) || [];
-    if ('data' in raw) return ((raw as Record<string, unknown>).data as CotRow[]) || [];
-  }
-  return [];
-}
-
 registerCard({
   type: 'cot-sentiment',
   title: 'COT Sentiment',
@@ -113,7 +102,7 @@ registerCard({
   },
 
   render(container: HTMLElement, data: CardData, activeView?: ViewType): (() => void) | void {
-    const rows = items(data.payload);
+    const rows = toItems<CotRow>(data.payload);
     if (rows.length === 0) {
       container.innerHTML = '<p class="text-sm text-slate-500 text-center py-6">No COT data available.</p>';
       return;
@@ -137,7 +126,7 @@ function renderChart(container: HTMLElement, data: Sentiment[], reportDate: stri
     <div class="space-y-2">
       <div class="flex items-center justify-between px-1">
         <div class="flex items-center gap-3 text-[10px] text-slate-500">
-          <span>Report: <span class="text-slate-300">${esc(reportDate)}</span></span>
+          <span>Report: <span class="text-slate-300">${escapeHtml(reportDate)}</span></span>
           <span class="text-emerald-400">${bullish} bullish</span>
           <span class="text-red-400">${bearish} bearish</span>
         </div>
@@ -172,7 +161,7 @@ function renderChart(container: HTMLElement, data: Sentiment[], reportDate: stri
             if (!d) return '';
             const pct = d.pctLong.toFixed(1);
             const sentiment = d.pctLong >= 50 ? '<span style="color:#22c55e">Bullish</span>' : '<span style="color:#ef4444">Bearish</span>';
-            return `<div style="font-size:11px"><strong>${esc(d.name)}</strong><br/>` +
+            return `<div style="font-size:11px"><strong>${escapeHtml(d.name)}</strong><br/>` +
               `Sentiment: ${sentiment} (${pct}% long)<br/>` +
               `Net NC: ${fmtK(d.ncNet)}<br/>` +
               `OI: ${fmtK(d.oi)}</div>`;
@@ -226,7 +215,7 @@ function renderChart(container: HTMLElement, data: Sentiment[], reportDate: stri
 function renderTable(container: HTMLElement, data: Sentiment[], reportDate: string): void {
   let html = `
     <div class="flex items-center justify-between px-1 mb-2">
-      <span class="text-[10px] text-slate-500">Report: <span class="text-slate-300">${esc(reportDate)}</span></span>
+      <span class="text-[10px] text-slate-500">Report: <span class="text-slate-300">${escapeHtml(reportDate)}</span></span>
       <a href="/commodities" class="text-[10px] text-fin-400 hover:underline">All commodities &rarr;</a>
     </div>
     <div class="overflow-x-auto">
@@ -258,7 +247,7 @@ function renderTable(container: HTMLElement, data: Sentiment[], reportDate: stri
     html += `
       <tr class="hover:bg-fin-800/30 transition-colors">
         <td class="px-2 py-1.5">
-          <a href="/commodities?commodity=${encodeURIComponent(d.name)}" class="text-fin-400 hover:underline truncate max-w-[140px] inline-block">${esc(d.name)}</a>
+          <a href="/commodities?commodity=${encodeURIComponent(d.name)}" class="text-fin-400 hover:underline truncate max-w-[140px] inline-block">${escapeHtml(d.name)}</a>
         </td>
         <td class="px-2 py-1.5">
           <div class="flex items-center gap-1.5 justify-center">

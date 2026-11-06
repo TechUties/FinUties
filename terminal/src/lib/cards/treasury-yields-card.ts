@@ -3,20 +3,7 @@
  */
 import { registerCard } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as Record<string, unknown>).items || [];
-    if ('data' in raw) return (raw as Record<string, unknown>).data || [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
 
 registerCard({
   type: 'treasury-yields',
@@ -41,7 +28,7 @@ registerCard({
   render: (container, data, activeView) => {
     const view = activeView ?? 'chart';
     const raw = data.payload;
-    const list = items(raw);
+    const list = toItems(raw);
     const error = raw == null || (typeof raw === 'object' && 'error' in raw);
 
     if (error && list.length === 0) {
@@ -131,9 +118,9 @@ registerCard({
                 const val = rec.value ?? rec.rate ?? rec.yield ?? 0;
                 const sid = String(rec.series_id ?? rec.id ?? '');
                 return `<tr class="border-b border-fin-700/30">
-                  <td class="py-2 pr-4 text-slate-500">${e(String(rec.period ?? rec.date ?? ''))}</td>
-                  <td class="py-2 pr-4"><a href="/explore?mode=data&source=macro_treasury-yield-series&q=${encodeURIComponent(sid)}" class="text-fin-400 hover:underline">${e(sid)}</a></td>
-                  <td class="py-2 text-right tabular-nums">${e(String(Number(val).toFixed(2)))}%</td>
+                  <td class="py-2 pr-4 text-slate-500">${escapeHtml(String(rec.period ?? rec.date ?? ''))}</td>
+                  <td class="py-2 pr-4"><a href="/explore?mode=data&source=macro_treasury-yield-series&q=${encodeURIComponent(sid)}" class="text-fin-400 hover:underline">${escapeHtml(sid)}</a></td>
+                  <td class="py-2 text-right tabular-nums">${escapeHtml(String(Number(val).toFixed(2)))}%</td>
                 </tr>`;
               }
               )

@@ -3,20 +3,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as Record<string, unknown>).items as Record<string, unknown>[] ?? [];
-    if ('data' in raw) return (raw as Record<string, unknown>).data as Record<string, unknown>[] ?? [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
 
 interface PriceTile {
   category: string;
@@ -88,7 +75,7 @@ registerCard({
   },
 
   render(container, data) {
-    const rows = items(data.payload);
+    const rows = toItems(data.payload);
     const tiles = buildTiles(rows);
 
     if (tiles.length === 0) {
@@ -108,11 +95,11 @@ registerCard({
         : '';
 
       return '<div class="rounded-lg ' + c.bg + ' border ' + c.border + ' p-3">'
-        + '<div class="text-[10px] text-slate-500 uppercase tracking-wider truncate">' + e(t.category) + '</div>'
-        + '<div class="text-lg font-bold tabular-nums text-slate-100 mt-1">' + e(t.value.toFixed(1)) + '</div>'
+        + '<div class="text-[10px] text-slate-500 uppercase tracking-wider truncate">' + escapeHtml(t.category) + '</div>'
+        + '<div class="text-lg font-bold tabular-nums text-slate-100 mt-1">' + escapeHtml(t.value.toFixed(1)) + '</div>'
         + '<div class="flex items-center gap-2 mt-0.5 text-[9px]">'
         + (change !== null ? '<span class="' + changeColor + ' font-mono">' + arrow + ' ' + pct + '</span>' : '')
-        + '<span class="text-slate-600">' + e(t.date) + '</span>'
+        + '<span class="text-slate-600">' + escapeHtml(t.date) + '</span>'
         + '</div></div>';
     }).join('');
 

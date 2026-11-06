@@ -3,20 +3,8 @@
  */
 import { registerCard } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as { items?: unknown[] }).items ?? [];
-    if ('data' in raw) return (raw as { data?: unknown[] }).data ?? [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
+import { formatShares } from '../format';
 
 function fmtValue(v: unknown): string {
   const n = Number(v);
@@ -27,15 +15,6 @@ function fmtValue(v: unknown): string {
   if (abs >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
   if (abs >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
   return '$' + n.toLocaleString();
-}
-
-function fmtShares(v: unknown): string {
-  const n = Number(v);
-  if (!n || isNaN(n)) return '\u2014';
-  const abs = Math.abs(n);
-  if (abs >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (abs >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-  return n.toLocaleString();
 }
 
 const FLOW_COLORS = [
@@ -78,7 +57,7 @@ registerCard({
     };
   },
   render: (container, data) => {
-    const rows = items(data.payload);
+    const rows = toItems(data.payload);
 
     if (rows.length === 0) {
       container.innerHTML = '<p class="text-sm text-slate-500 text-center py-6">No investment data.</p>';
@@ -116,12 +95,12 @@ registerCard({
           <div class="flex items-end justify-between">
             <div>
               <div class="text-[10px] text-slate-500 uppercase tracking-wider">Institutional Flow</div>
-              <div class="text-xl font-mono tabular-nums font-bold text-slate-200">${e(fmtValue(totalValue))}</div>
+              <div class="text-xl font-mono tabular-nums font-bold text-slate-200">${escapeHtml(fmtValue(totalValue))}</div>
             </div>
             <span class="text-[10px] text-slate-500">Top3 ${top3Share.toFixed(1)}%</span>
           </div>
           <div class="mt-2 flex items-center gap-1 flex-wrap">
-            ${topSymbols.map(([s, v]) => `<span class="inline-flex rounded bg-fin-700/40 px-1.5 py-0.5 text-[9px] text-fin-300 font-semibold">${e(s)} ${e(fmtValue(v))}</span>`).join('')}
+            ${topSymbols.map(([s, v]) => `<span class="inline-flex rounded bg-fin-700/40 px-1.5 py-0.5 text-[9px] text-fin-300 font-semibold">${escapeHtml(s)} ${escapeHtml(fmtValue(v))}</span>`).join('')}
           </div>
         </div>
         <div class="flex items-center justify-between px-1">
@@ -140,8 +119,8 @@ registerCard({
             const color = investorColors.get(investorName) ?? '#64748b';
 
             const investorLink = investorCik
-              ? `<a href="/explore?type=investor&cik=${encodeURIComponent(String(investorCik))}" class="text-fin-400 hover:underline font-medium truncate">${e(investorName)}</a>`
-              : `<span class="font-medium text-slate-200 truncate">${e(investorName)}</span>`;
+              ? `<a href="/explore?type=investor&cik=${encodeURIComponent(String(investorCik))}" class="text-fin-400 hover:underline font-medium truncate">${escapeHtml(investorName)}</a>`
+              : `<span class="font-medium text-slate-200 truncate">${escapeHtml(investorName)}</span>`;
 
             const companyHref = companySymbol
               ? `/explore?type=company&symbol=${encodeURIComponent(String(companySymbol))}`
@@ -149,11 +128,11 @@ registerCard({
                 ? `/explore?type=company&cik=${encodeURIComponent(String(companyCik))}`
                 : '';
             const companyLink = companyHref
-              ? `<a href="${companyHref}" class="text-slate-200 hover:text-fin-400 hover:underline transition-colors">${e(companyName)}</a>`
-              : `<span class="text-slate-200">${e(companyName)}</span>`;
+              ? `<a href="${companyHref}" class="text-slate-200 hover:text-fin-400 hover:underline transition-colors">${escapeHtml(companyName)}</a>`
+              : `<span class="text-slate-200">${escapeHtml(companyName)}</span>`;
 
             const symBadge = companySymbol
-              ? `<span class="inline-flex items-center rounded bg-fin-700/40 px-1.5 py-0.5 text-[9px] font-bold text-fin-400 tracking-wider">${e(String(companySymbol))}</span>`
+              ? `<span class="inline-flex items-center rounded bg-fin-700/40 px-1.5 py-0.5 text-[9px] font-bold text-fin-400 tracking-wider">${escapeHtml(String(companySymbol))}</span>`
               : '';
 
             return `
@@ -169,8 +148,8 @@ registerCard({
                     ${symBadge}
                   </div>
                   <div class="flex items-center gap-3 mt-0.5 text-[10px]">
-                    ${value != null ? `<span class="tabular-nums text-slate-300">${e(fmtValue(value))}</span>` : ''}
-                    ${shares != null ? `<span class="tabular-nums text-slate-500">${e(fmtShares(shares))} shares</span>` : ''}
+                    ${value != null ? `<span class="tabular-nums text-slate-300">${escapeHtml(fmtValue(value))}</span>` : ''}
+                    ${shares != null ? `<span class="tabular-nums text-slate-500">${escapeHtml(formatShares(shares))} shares</span>` : ''}
                   </div>
                 </div>
               </div>`;

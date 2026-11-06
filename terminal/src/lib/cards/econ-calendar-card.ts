@@ -3,20 +3,7 @@
  */
 import { registerCard } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as { items?: unknown[] }).items ?? [];
-    if ('data' in raw) return (raw as { data?: unknown[] }).data ?? [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
 
 interface CalEvent {
   date: string;
@@ -89,7 +76,7 @@ registerCard({
   async fetch() {
     const res = await apiFetch<unknown>('/api/v1/calendar/events?limit=20');
     return {
-      payload: { items: items(res.data), sourceOk: !!res.ok },
+      payload: { items: toItems(res.data), sourceOk: !!res.ok },
       tokenCost: res.tokenCost,
       creditsRemaining: res.creditsRemaining,
     };
@@ -142,7 +129,7 @@ registerCard({
       html += `
         <div>
           <div class="flex items-center gap-2 mb-1.5">
-            <span class="text-[11px] font-semibold ${isToday ? 'text-fin-400' : 'text-slate-400'}">${e(label)}</span>
+            <span class="text-[11px] font-semibold ${isToday ? 'text-fin-400' : 'text-slate-400'}">${escapeHtml(label)}</span>
             <div class="flex-1 h-px bg-fin-800/60"></div>
           </div>
           <div class="space-y-0.5 pl-1 max-h-[300px] overflow-y-auto pr-1 fin-scroll">
@@ -152,10 +139,10 @@ registerCard({
         const imp = IMPACT_DOT[ev.impact] ?? IMPACT_DOT.low;
         html += `
             <div class="flex items-center gap-2.5 py-1.5 rounded-md hover:bg-fin-800/30 transition-colors px-2 -mx-1">
-              <div class="flex-shrink-0 w-2 h-2 rounded-full ${imp!.color} ring-2 ${imp!.ring}" title="${e(imp!.label)} impact"></div>
-              ${ev.time ? `<span class="flex-shrink-0 text-[10px] font-mono tabular-nums text-slate-500 w-10">${e(ev.time)}</span>` : '<span class="w-10"></span>'}
-              <span class="flex-1 text-sm text-slate-200 truncate">${e(ev.name)}</span>
-              ${ev.country ? `<span class="flex-shrink-0 text-[10px] text-slate-500 uppercase tracking-wider">${e(ev.country)}</span>` : ''}
+              <div class="flex-shrink-0 w-2 h-2 rounded-full ${imp!.color} ring-2 ${imp!.ring}" title="${escapeHtml(imp!.label)} impact"></div>
+              ${ev.time ? `<span class="flex-shrink-0 text-[10px] font-mono tabular-nums text-slate-500 w-10">${escapeHtml(ev.time)}</span>` : '<span class="w-10"></span>'}
+              <span class="flex-1 text-sm text-slate-200 truncate">${escapeHtml(ev.name)}</span>
+              ${ev.country ? `<span class="flex-shrink-0 text-[10px] text-slate-500 uppercase tracking-wider">${escapeHtml(ev.country)}</span>` : ''}
             </div>
         `;
       }

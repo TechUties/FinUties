@@ -5,13 +5,9 @@
  */
 import { registerCard, type CardData, type ViewType } from '../card-registry';
 import { apiFetch } from '../api-client';
+import { escapeHtml } from '../html';
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
 
 function fmtCompact(n: number | null | undefined): string {
   if (n == null) return '—';
@@ -132,20 +128,20 @@ function renderTableView(container: HTMLElement, companies: Company[]): void {
       const hasInvestors = c.top_investors && c.top_investors.length > 0;
 
       html += `
-          <tr class="hover:bg-fin-800/30 transition-colors cursor-pointer" data-symbol="${e(c.stock_symbol)}">
+          <tr class="hover:bg-fin-800/30 transition-colors cursor-pointer" data-symbol="${escapeHtml(c.stock_symbol)}">
             <td class="px-2 py-1.5">
               <span class="text-slate-500 mr-1 text-[10px]">${hasInvestors ? chevron : '·'}</span>
-              <a href="/explore?mode=data&source=sec_filings&symbol=${encodeURIComponent(c.stock_symbol)}" class="text-fin-400 hover:underline font-medium">${e(c.stock_symbol)}</a>
+              <a href="/explore?mode=data&source=sec_filings&symbol=${encodeURIComponent(c.stock_symbol)}" class="text-fin-400 hover:underline font-medium">${escapeHtml(c.stock_symbol)}</a>
             </td>
-            <td class="px-2 py-1.5 text-slate-200 truncate max-w-[160px]">${e(c.company_name ?? '—')}</td>
+            <td class="px-2 py-1.5 text-slate-200 truncate max-w-[160px]">${escapeHtml(c.company_name ?? '—')}</td>
             <td class="px-2 py-1.5">
               <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:${sectorColor(c.sector)}"></span>
-              <span class="text-slate-300">${e(c.sector ?? '—')}</span>
+              <span class="text-slate-300">${escapeHtml(c.sector ?? '—')}</span>
             </td>
             <td class="px-2 py-1.5 text-right tabular-nums text-slate-200">${fmtCurrency(c.total_value)}</td>
             <td class="px-2 py-1.5 text-right tabular-nums text-slate-300">${fmtCompact(c.total_shares)}</td>
             <td class="px-2 py-1.5 text-right tabular-nums text-slate-300">${c.investor_count.toLocaleString()}</td>
-            <td class="px-2 py-1.5 text-slate-400">${e((c.latest_filing ?? '').slice(0, 10))}</td>
+            <td class="px-2 py-1.5 text-slate-400">${escapeHtml((c.latest_filing ?? '').slice(0, 10))}</td>
           </tr>`;
 
       if (isOpen && hasInvestors) {
@@ -168,9 +164,9 @@ function renderTableView(container: HTMLElement, companies: Company[]): void {
           html += `
                   <tr class="hover:bg-fin-800/20">
                     <td class="px-2 py-0.5">
-                      <a href="/explore?type=investor&cik=${encodeURIComponent(inv.cik)}" class="text-fin-400 hover:underline">${e(inv.name ?? inv.cik)}</a>
+                      <a href="/explore?type=investor&cik=${encodeURIComponent(inv.cik)}" class="text-fin-400 hover:underline">${escapeHtml(inv.name ?? inv.cik)}</a>
                     </td>
-                    <td class="px-2 py-0.5 text-slate-500">${e(inv.type ?? '—')}</td>
+                    <td class="px-2 py-0.5 text-slate-500">${escapeHtml(inv.type ?? '—')}</td>
                     <td class="px-2 py-0.5 text-right tabular-nums text-slate-300">${fmtCurrency(inv.value)}</td>
                     <td class="px-2 py-0.5 text-right tabular-nums text-slate-400">${fmtCompact(inv.shares)}</td>
                   </tr>`;
@@ -251,7 +247,7 @@ function renderChartView(container: HTMLElement, companies: Company[]): (() => v
               name: string; value: number; dataIndex: number;
             };
             const c = top15[p.dataIndex];
-            return `<strong>${e(c.stock_symbol)}</strong> — ${e(c.company_name ?? '')}<br/>
+            return `<strong>${escapeHtml(c.stock_symbol)}</strong> — ${escapeHtml(c.company_name ?? '')}<br/>
               Value: ${fmtCurrency(p.value)}<br/>
               Shares: ${fmtCompact(c.total_shares)}<br/>
               Investors: ${c.investor_count.toLocaleString()}`;
@@ -387,9 +383,9 @@ function renderNetworkView(container: HTMLElement, companies: Company[]): (() =>
           label: { show: true, color: '#e2e8f0', fontSize: 10 },
           tooltip: {
             formatter: () =>
-              `<strong>${e(c.stock_symbol)}</strong><br/>` +
-              `${e(c.company_name ?? '')}<br/>` +
-              `Sector: ${e(c.sector ?? '—')}<br/>` +
+              `<strong>${escapeHtml(c.stock_symbol)}</strong><br/>` +
+              `${escapeHtml(c.company_name ?? '')}<br/>` +
+              `Sector: ${escapeHtml(c.sector ?? '—')}<br/>` +
               `Value: ${fmtCurrency(c.total_value)}<br/>` +
               `Investors: ${c.investor_count.toLocaleString()}`,
           },
@@ -406,9 +402,9 @@ function renderNetworkView(container: HTMLElement, companies: Company[]): (() =>
         },
         tooltip: {
           formatter: () =>
-            `<strong>${e(ed.source)} — ${e(ed.target)}</strong><br/>` +
+            `<strong>${escapeHtml(ed.source)} — ${escapeHtml(ed.target)}</strong><br/>` +
             `${ed.shared} shared investors:<br/>` +
-            ed.names.slice(0, 5).map((n) => `· ${e(n)}`).join('<br/>') +
+            ed.names.slice(0, 5).map((n) => `· ${escapeHtml(n)}`).join('<br/>') +
             (ed.names.length > 5 ? `<br/>… and ${ed.names.length - 5} more` : ''),
         },
       }));

@@ -4,6 +4,7 @@
  * Every imperative view module imports from here to build responsive
  * pod-grid layouts with standardised styling.
  */
+import { escapeHtml } from '../html';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -33,12 +34,10 @@ export const TYPE_LABELS: Record<string, string> = {
 
 // ─── Utility functions ─────────────────────────────────────────────────────
 
-const _ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
 /** HTML-escape a string. */
-export function esc(s: string): string {
-  return String(s ?? '').replace(/[&<>"']/g, (c) => _ESC[c]);
-}
+/** HTML-escape a value. Kept under this name for existing section and plugin code; new code imports `escapeHtml` from `lib/html.ts`. */
+export const esc = escapeHtml;
 
 /** Format an error for display. */
 export function fmtErr(err: unknown): string {
@@ -217,7 +216,7 @@ export function initZoom(): void {
     const val = Math.max(70, Math.min(130, pct));
     slider!.value = String(val);
     if (label) label.textContent = val + '%';
-    (content!.style as Record<string, string>).zoom = String(val / 100);
+    content!.style.setProperty('zoom', String(val / 100));
     try { localStorage.setItem('explore-zoom', String(val / 100)); } catch {}
   }
 
