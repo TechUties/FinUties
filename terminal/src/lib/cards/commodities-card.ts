@@ -4,10 +4,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string { return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]); }
-function items(raw: unknown): Record<string, unknown>[] { if (Array.isArray(raw)) return raw; if (raw && typeof raw === 'object') { if ('items' in raw) return (raw as Record<string, unknown>).items as Record<string, unknown>[] ?? []; if ('data' in raw) return (raw as Record<string, unknown>).data as Record<string, unknown>[] ?? []; } return []; }
+import { escapeHtml, toItems } from '../html';
 
 const COMMODITY_COLORS: Record<string, string> = { corn: 'bg-amber-500/15 border-amber-500/20', wheat: 'bg-orange-500/15 border-orange-500/20', soybeans: 'bg-emerald-500/15 border-emerald-500/20', rice: 'bg-cyan-500/15 border-cyan-500/20', cotton: 'bg-violet-500/15 border-violet-500/20', sugar: 'bg-pink-500/15 border-pink-500/20' };
 function commodityStyle(name: string): string { const l = name.toLowerCase(); for (const [k, c] of Object.entries(COMMODITY_COLORS)) { if (l.includes(k)) return c; } return 'bg-fin-700/20 border-fin-600/20'; }
@@ -22,7 +19,7 @@ registerCard({
   exploreUrl: '/explore?mode=data&source=fd_usda_wasde',
   async fetch(): Promise<CardData> {
     const [wasdeRes, hungerRes] = await Promise.all([apiFetch<unknown>('/api/v1/data/food/wasde?limit=15').catch(() => null), apiFetch<unknown>('/api/v1/data/food/hunger?limit=8').catch(() => null)]);
-    return { payload: { wasde: wasdeRes?.ok ? items(wasdeRes.data) : [], hunger: hungerRes?.ok ? items(hungerRes.data) : [] }, tokenCost: (wasdeRes?.tokenCost ?? 0) + (hungerRes?.tokenCost ?? 0), creditsRemaining: wasdeRes?.creditsRemaining ?? hungerRes?.creditsRemaining ?? null };
+    return { payload: { wasde: wasdeRes?.ok ? toItems(wasdeRes.data) : [], hunger: hungerRes?.ok ? toItems(hungerRes.data) : [] }, tokenCost: (wasdeRes?.tokenCost ?? 0) + (hungerRes?.tokenCost ?? 0), creditsRemaining: wasdeRes?.creditsRemaining ?? hungerRes?.creditsRemaining ?? null };
   },
   render(container, data) {
     const p = data.payload as { wasde: Record<string, unknown>[]; hunger: Record<string, unknown>[] };
@@ -30,11 +27,11 @@ registerCard({
     let wh = '';
     for (const r of (p.wasde ?? []).slice(0, 8)) {
       const c = String(r.commodity ?? ''); const a = String(r.attribute ?? ''); const v = Number(r.value ?? 0); const u = String(r.unit ?? ''); const rg = String(r.region ?? ''); const st = commodityStyle(c);
-      wh += '<div class="rounded-lg border ' + st + ' p-2"><div class="text-[10px] text-slate-400 truncate">' + e(c) + '</div><div class="text-sm font-bold tabular-nums text-slate-100">' + e(v.toLocaleString()) + ' <span class="text-[9px] text-slate-500 font-normal">' + e(u) + '</span></div><div class="text-[9px] text-slate-600 truncate">' + e(a) + (rg ? ' \u00b7 ' + e(rg) : '') + '</div></div>';
+      wh += '<div class="rounded-lg border ' + st + ' p-2"><div class="text-[10px] text-slate-400 truncate">' + escapeHtml(c) + '</div><div class="text-sm font-bold tabular-nums text-slate-100">' + escapeHtml(v.toLocaleString()) + ' <span class="text-[9px] text-slate-500 font-normal">' + escapeHtml(u) + '</span></div><div class="text-[9px] text-slate-600 truncate">' + escapeHtml(a) + (rg ? ' \u00b7 ' + escapeHtml(rg) : '') + '</div></div>';
     }
     let hh = '';
     for (const r of (p.hunger ?? []).slice(0, 4)) {
-      hh += '<div class="flex items-center gap-2 text-[11px] py-1"><span class="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0"></span><span class="text-slate-300 font-medium">' + e(String(r.country ?? '')) + '</span><span class="text-slate-500 truncate flex-1">' + e(String(r.indicator ?? '')) + '</span><span class="tabular-nums text-orange-400 font-medium">' + e(Number(r.value ?? 0).toFixed(1)) + '</span></div>';
+      hh += '<div class="flex items-center gap-2 text-[11px] py-1"><span class="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0"></span><span class="text-slate-300 font-medium">' + escapeHtml(String(r.country ?? '')) + '</span><span class="text-slate-500 truncate flex-1">' + escapeHtml(String(r.indicator ?? '')) + '</span><span class="tabular-nums text-orange-400 font-medium">' + escapeHtml(Number(r.value ?? 0).toFixed(1)) + '</span></div>';
     }
     container.innerHTML = '<div class="space-y-3"><div class="flex items-center justify-end px-1"><a href="/explore?mode=data&source=fd_usda_wasde" class="text-[10px] text-fin-400 hover:underline">Explore \u2192</a></div>' + (wh ? '<div class="grid grid-cols-2 gap-1.5">' + wh + '</div>' : '') + (hh ? '<div class="border-t border-fin-700/30 pt-2 mt-2"><div class="text-[10px] text-slate-500 uppercase tracking-wider px-1 mb-1">Hunger Indicators</div>' + hh + '</div>' : '') + '</div>';
   },

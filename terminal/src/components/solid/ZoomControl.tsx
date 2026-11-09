@@ -15,7 +15,7 @@ export default function ZoomControl(): JSX.Element {
   createEffect(() => {
     const content = document.getElementById('explore-content');
     if (content) {
-      (content.style as Record<string, string>).zoom = String(zoom());
+      content.style.setProperty('zoom', String(zoom()));
     }
   });
 

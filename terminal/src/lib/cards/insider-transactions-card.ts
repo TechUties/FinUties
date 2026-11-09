@@ -3,29 +3,8 @@
  */
 import { registerCard } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as { items?: unknown[] }).items ?? [];
-    if ('data' in raw) return (raw as { data?: unknown[] }).data ?? [];
-  }
-  return [];
-}
-
-function fmtShares(v: unknown): string {
-  const n = Number(v);
-  if (!n || isNaN(n)) return '\u2014';
-  const abs = Math.abs(n);
-  if (abs >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (abs >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-  return n.toLocaleString();
-}
+import { escapeHtml, toItems } from '../html';
+import { formatShares } from '../format';
 
 function classifyType(raw: string): 'buy' | 'sell' | 'other' {
   const t = raw.toLowerCase();
@@ -51,7 +30,7 @@ registerCard({
     };
   },
   render: (container, data) => {
-    const rows = items(data.payload);
+    const rows = toItems(data.payload);
 
     if (rows.length === 0) {
       container.innerHTML = '<p class="text-sm text-slate-500 text-center py-6">No insider transactions.</p>';
@@ -80,7 +59,7 @@ registerCard({
           <div class="flex items-end justify-between">
             <div>
               <div class="text-[10px] text-slate-500 uppercase tracking-wider">Net Flow</div>
-              <div class="text-xl font-mono tabular-nums font-bold ${netShares >= 0 ? 'text-emerald-400' : 'text-red-400'}">${netShares >= 0 ? '+' : ''}${e(fmtShares(netShares))}</div>
+              <div class="text-xl font-mono tabular-nums font-bold ${netShares >= 0 ? 'text-emerald-400' : 'text-red-400'}">${netShares >= 0 ? '+' : ''}${escapeHtml(formatShares(netShares))}</div>
             </div>
             <span class="text-[10px] text-slate-500">${buySharePct.toFixed(0)}% buy / ${sellSharePct.toFixed(0)}% sell</span>
           </div>
@@ -88,7 +67,7 @@ registerCard({
             <span class="bg-emerald-400" style="width:${((buyShares / totalFlow) * 100).toFixed(1)}%"></span>
             <span class="bg-red-400" style="width:${((sellShares / totalFlow) * 100).toFixed(1)}%"></span>
           </div>
-          <div class="mt-1 flex items-center justify-between text-[10px] text-slate-500"><span>Buy flow ${e(fmtShares(buyShares))}</span><span>Sell flow ${e(fmtShares(sellShares))}</span></div>
+          <div class="mt-1 flex items-center justify-between text-[10px] text-slate-500"><span>Buy flow ${escapeHtml(formatShares(buyShares))}</span><span>Sell flow ${escapeHtml(formatShares(sellShares))}</span></div>
         </div>
         <div class="flex items-center justify-between px-1">
           <div class="flex items-center gap-3 text-[10px]">
@@ -116,8 +95,8 @@ registerCard({
             const dotColor = kind === 'buy' ? 'bg-emerald-400' : kind === 'sell' ? 'bg-red-400' : 'bg-slate-500';
 
             const companyLink = cik
-              ? `<a href="/explore?type=company&cik=${encodeURIComponent(String(cik))}" class="text-fin-400 hover:underline font-medium">${e(company)}</a>`
-              : `<span class="font-medium text-slate-200">${e(company)}</span>`;
+              ? `<a href="/explore?type=company&cik=${encodeURIComponent(String(cik))}" class="text-fin-400 hover:underline font-medium">${escapeHtml(company)}</a>`
+              : `<span class="font-medium text-slate-200">${escapeHtml(company)}</span>`;
 
             return `
               <div class="flex items-start gap-2.5 rounded-lg bg-fin-800/30 border border-fin-700/20 px-3 py-2 hover:bg-fin-800/50 transition-colors">
@@ -128,9 +107,9 @@ registerCard({
                   <div class="flex items-center gap-2 flex-wrap">
                     ${companyLink}
                     <span class="inline-flex items-center rounded border ${badgeCls} px-1.5 py-0.5 text-[9px] font-bold tracking-wider">${badgeLabel}</span>
-                    ${shares != null ? `<span class="text-[10px] tabular-nums text-slate-400">${e(fmtShares(shares))} shares</span>` : ''}
+                    ${shares != null ? `<span class="text-[10px] tabular-nums text-slate-400">${escapeHtml(formatShares(shares))} shares</span>` : ''}
                   </div>
-                  <div class="text-[10px] text-slate-500 mt-0.5">${e(owner)} \u00B7 ${e(date)}</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5">${escapeHtml(owner)} \u00B7 ${escapeHtml(date)}</div>
                 </div>
               </div>`;
           }).join('')}

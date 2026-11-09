@@ -71,13 +71,13 @@ interface Debounced<T extends (...args: unknown[]) => void> {
 
 function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number): Debounced<T> {
   let timer: ReturnType<typeof setTimeout> | null = null;
-  const db = ((...args: unknown[]) => {
+  const run = (...args: Parameters<T>): void => {
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => { timer = null; fn(...args); }, ms);
-  }) as Debounced<T>;
-  db.flush = () => { if (timer) { clearTimeout(timer); timer = null; fn(); } };
-  db.cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
-  return db;
+  };
+  const flush = (): void => { if (timer) { clearTimeout(timer); timer = null; fn(); } };
+  const cancel = (): void => { if (timer) { clearTimeout(timer); timer = null; } };
+  return Object.assign(run, { flush, cancel });
 }
 
 // ─── Load Data ───────────────────────────────────────────────────

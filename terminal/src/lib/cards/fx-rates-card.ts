@@ -3,20 +3,7 @@
  */
 import { registerCard } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as Record<string, unknown>).items || [];
-    if ('data' in raw) return (raw as Record<string, unknown>).data || [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
 
 const PAIR_FLAGS: Record<string, string> = {
   EUR: '\u20AC', USD: '$', GBP: '\u00A3', JPY: '\u00A5',
@@ -90,7 +77,7 @@ registerCard({
   },
   render: (container, data) => {
     const raw = data.payload;
-    const list = items(raw);
+    const list = toItems(raw);
 
     if (list.length === 0) {
       container.innerHTML = '<p class="text-sm text-red-400/90 p-4">Failed to load FX rates.</p>';
@@ -103,7 +90,7 @@ registerCard({
     container.innerHTML = `
       <div class="space-y-3">
         <div class="flex items-center justify-between px-1">
-          <span class="text-[10px] text-slate-500">${e(latestDate)}</span>
+          <span class="text-[10px] text-slate-500">${escapeHtml(latestDate)}</span>
           <a href="/explore?mode=data&source=ecb_observations" class="text-[10px] text-fin-400 hover:underline">All rates \u2192</a>
         </div>
         <div class="grid grid-cols-2 gap-2">
@@ -121,10 +108,10 @@ registerCard({
               <a href="/explore?mode=data&source=ecb_observations&q=${encodeURIComponent(r.pair)}" 
                  class="block rounded-lg bg-fin-800/50 border border-fin-700/40 ${bgHover} px-3 py-2.5 transition-colors no-underline group">
                 <div class="flex items-center justify-between mb-1">
-                  <span class="text-[11px] font-semibold text-slate-300 tracking-wide">${sym ? `<span class="text-slate-500 mr-0.5">${e(sym)}</span>` : ''}${e(r.pair)}</span>
+                  <span class="text-[11px] font-semibold text-slate-300 tracking-wide">${sym ? `<span class="text-slate-500 mr-0.5">${escapeHtml(sym)}</span>` : ''}${escapeHtml(r.pair)}</span>
                   ${pctChange !== null ? `<span class="text-[10px] font-mono ${changeColor}">${arrow} ${Math.abs(pctChange).toFixed(2)}%</span>` : ''}
                 </div>
-                <div class="text-lg font-bold tabular-nums text-slate-100 leading-tight">${e(r.rate.toFixed(4))}</div>
+                <div class="text-lg font-bold tabular-nums text-slate-100 leading-tight">${escapeHtml(r.rate.toFixed(4))}</div>
                 ${change !== null ? `<div class="text-[10px] font-mono ${changeColor} mt-0.5">${change >= 0 ? '+' : ''}${change.toFixed(4)}</div>` : '<div class="text-[10px] text-slate-600 mt-0.5">\u2014</div>'}
               </a>`;
           }).join('')}

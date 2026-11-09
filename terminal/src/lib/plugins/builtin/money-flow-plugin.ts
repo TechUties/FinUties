@@ -1,10 +1,7 @@
 import type { CardData, ViewType } from '../../card-registry';
 import { apiFetch } from '../../api-client';
 import type { TerminalPlugin } from '../contract';
-
-function esc(s: string): string {
-  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
-}
+import { escapeHtml } from '../../html';
 
 function listRows(raw: unknown): Array<Record<string, unknown>> {
   if (Array.isArray(raw)) return raw as Array<Record<string, unknown>>;
@@ -46,7 +43,7 @@ export const moneyFlowPlugin: TerminalPlugin = {
           return;
         }
         const body = rows.map((r) => {
-          const name = esc(String(r.commodity_name ?? r.market_and_exchange_names ?? 'Unknown'));
+          const name = escapeHtml(String(r.commodity_name ?? r.market_and_exchange_names ?? 'Unknown'));
           const long = Number(r.noncomm_positions_long_all ?? 0) || 0;
           const short = Number(r.noncomm_positions_short_all ?? 0) || 0;
           const net = long - short;

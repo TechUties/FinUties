@@ -4,20 +4,8 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as Record<string, unknown>).items as Record<string, unknown>[] ?? [];
-    if ('data' in raw) return (raw as Record<string, unknown>).data as Record<string, unknown>[] ?? [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
+import { timeAgo } from '../format';
 
 interface AlertItem {
   kind: 'disaster' | 'weather' | 'outbreak';
@@ -68,22 +56,6 @@ function noaaSeverity(sev: string | undefined): AlertItem['severity'] {
   if (s === 'severe') return 'orange';
   if (s === 'moderate') return 'yellow';
   return 'grey';
-}
-
-function timeAgo(dateStr: string): string {
-  try {
-    const d = new Date(dateStr);
-    const diff = Date.now() - d.getTime();
-    const hours = Math.floor(diff / 3_600_000);
-    if (hours < 1) return 'just now';
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days === 1) return 'yesterday';
-    if (days < 7) return `${days}d ago`;
-    return dateStr.slice(0, 10);
-  } catch {
-    return dateStr.slice(0, 10);
-  }
 }
 
 function parseGdacs(raw: Record<string, unknown>[]): AlertItem[] {
@@ -153,9 +125,9 @@ registerCard({
 
     return {
       payload: {
-        gdacs: gdacsRes?.ok ? items(gdacsRes.data) : [],
-        weather: weatherRes?.ok ? items(weatherRes.data) : [],
-        outbreaks: outbreakRes?.ok ? items(outbreakRes.data) : [],
+        gdacs: gdacsRes?.ok ? toItems(gdacsRes.data) : [],
+        weather: weatherRes?.ok ? toItems(weatherRes.data) : [],
+        outbreaks: outbreakRes?.ok ? toItems(outbreakRes.data) : [],
         sourceOk: {
           gdacs: !!gdacsRes?.ok,
           weather: !!weatherRes?.ok,
@@ -187,7 +159,7 @@ registerCard({
       const sourceText = 'Sources: GDACS ' + (source.gdacs ? 'ok' : 'down')
         + ' · NOAA ' + (source.weather ? 'ok' : 'down')
         + ' · WHO ' + (source.outbreaks ? 'ok' : 'down');
-      container.innerHTML = '<div class="text-center py-6 space-y-1"><p class="text-sm text-slate-500">No active alerts.</p><p class="text-[10px] text-slate-600">' + e(sourceText) + '</p></div>';
+      container.innerHTML = '<div class="text-center py-6 space-y-1"><p class="text-sm text-slate-500">No active alerts.</p><p class="text-[10px] text-slate-600">' + escapeHtml(sourceText) + '</p></div>';
       return;
     }
 
@@ -242,13 +214,13 @@ registerCard({
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full ${dot} flex-shrink-0"></span>
-                    <span class="text-sm text-slate-200 font-medium truncate">${e(a.title)}</span>
-                    ${a.severityLabel ? `<span class="flex-shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${dot}/20 ${dot.replace('bg-', 'text-').replace('-500', '-300').replace('-400', '-300')}">${e(a.severityLabel)}</span>` : ''}
+                    <span class="text-sm text-slate-200 font-medium truncate">${escapeHtml(a.title)}</span>
+                    ${a.severityLabel ? `<span class="flex-shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${dot}/20 ${dot.replace('bg-', 'text-').replace('-500', '-300').replace('-400', '-300')}">${escapeHtml(a.severityLabel)}</span>` : ''}
                   </div>
                   <div class="flex flex-wrap gap-x-2 text-[10px] text-slate-500 mt-0.5">
-                    ${a.location ? `<span>${e(a.location)}</span>` : ''}
-                    ${ago ? `<span>${e(ago)}</span>` : ''}
-                    ${a.extra ? `<span class="text-slate-600 truncate max-w-[200px]">${e(a.extra)}</span>` : ''}
+                    ${a.location ? `<span>${escapeHtml(a.location)}</span>` : ''}
+                    ${ago ? `<span>${escapeHtml(ago)}</span>` : ''}
+                    ${a.extra ? `<span class="text-slate-600 truncate max-w-[200px]">${escapeHtml(a.extra)}</span>` : ''}
                   </div>
                 </div>
               </div>`;

@@ -4,20 +4,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as Record<string, unknown>).items || [];
-    if ('data' in raw) return (raw as Record<string, unknown>).data || [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
 
 interface WorldEvent {
   kind: 'conflict' | 'earthquake' | 'acled' | 'gdelt';
@@ -136,10 +123,10 @@ registerCard({
 
     return {
       payload: {
-        conflicts: conflictRes?.ok ? items(conflictRes.data) : [],
-        earthquakes: quakeRes?.ok ? items(quakeRes.data) : [],
-        acled: acledRes?.ok ? items(acledRes.data) : [],
-        gdelt: gdeltRes?.ok ? items(gdeltRes.data) : [],
+        conflicts: conflictRes?.ok ? toItems(conflictRes.data) : [],
+        earthquakes: quakeRes?.ok ? toItems(quakeRes.data) : [],
+        acled: acledRes?.ok ? toItems(acledRes.data) : [],
+        gdelt: gdeltRes?.ok ? toItems(gdeltRes.data) : [],
         sourceOk: {
           ucdp: !!conflictRes?.ok,
           quakes: !!quakeRes?.ok,
@@ -176,7 +163,7 @@ registerCard({
         + ' · Quakes ' + (source.quakes ? 'ok' : 'down')
         + ' · ACLED ' + (source.acled ? 'ok' : 'down')
         + ' · GDELT ' + (source.gdelt ? 'ok' : 'down');
-      container.innerHTML = '<div class="text-center py-6 space-y-1"><p class="text-sm text-slate-500">No world events to display.</p><p class="text-[10px] text-slate-600">' + e(sourceText) + '</p></div>';
+      container.innerHTML = '<div class="text-center py-6 space-y-1"><p class="text-sm text-slate-500">No world events to display.</p><p class="text-[10px] text-slate-600">' + escapeHtml(sourceText) + '</p></div>';
       return;
     }
 
@@ -231,17 +218,17 @@ registerCard({
             const icon = iconMap[ev.kind] ?? iconMap.conflict;
 
             return `
-              <a href="${e(ev.link)}" class="flex items-start gap-2.5 rounded-lg bg-fin-800/40 border border-fin-700/25 ${borderHover} px-3 py-2 transition-colors no-underline">
+              <a href="${escapeHtml(ev.link)}" class="flex items-start gap-2.5 rounded-lg bg-fin-800/40 border border-fin-700/25 ${borderHover} px-3 py-2 transition-colors no-underline">
                 <div class="flex-shrink-0 mt-0.5">${icon}</div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full ${dotColor} flex-shrink-0"></span>
-                    <span class="text-sm text-slate-200 font-medium truncate">${e(ev.name)}</span>
+                    <span class="text-sm text-slate-200 font-medium truncate">${escapeHtml(ev.name)}</span>
                   </div>
                   <div class="flex flex-wrap gap-x-2 text-[10px] text-slate-500 mt-0.5">
-                    ${ev.location ? `<span>${e(ev.location)}</span>` : ''}
-                    ${ev.date ? `<span>${e(ev.date)}</span>` : ''}
-                    ${ev.severityLabel ? `<span class="${ev.kind === 'earthquake' && ev.severity >= 6 ? 'text-red-400/90' : ev.severity >= 10 ? 'text-red-400/80' : ev.severity > 0 ? 'text-amber-400/80' : 'text-slate-500'}">${e(ev.severityLabel)}</span>` : ''}
+                    ${ev.location ? `<span>${escapeHtml(ev.location)}</span>` : ''}
+                    ${ev.date ? `<span>${escapeHtml(ev.date)}</span>` : ''}
+                    ${ev.severityLabel ? `<span class="${ev.kind === 'earthquake' && ev.severity >= 6 ? 'text-red-400/90' : ev.severity >= 10 ? 'text-red-400/80' : ev.severity > 0 ? 'text-amber-400/80' : 'text-slate-500'}">${escapeHtml(ev.severityLabel)}</span>` : ''}
                   </div>
                 </div>
               </a>`;

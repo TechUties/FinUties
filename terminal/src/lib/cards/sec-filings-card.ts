@@ -4,20 +4,8 @@
  */
 import { registerCard } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as { items?: unknown[] }).items ?? [];
-    if ('data' in raw) return (raw as { data?: unknown[] }).data ?? [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
+import { timeAgo } from '../format';
 
 const FORM_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   '10-K':  { bg: 'bg-blue-500/15',   text: 'text-blue-400',   border: 'border-blue-500/20' },
@@ -38,23 +26,6 @@ function formStyle(formType: string): { bg: string; text: string; border: string
   return { bg: 'bg-fin-700/40', text: 'text-fin-400', border: 'border-fin-600/20' };
 }
 
-function timeAgo(dateStr: string): string {
-  try {
-    const d = new Date(dateStr);
-    const now = Date.now();
-    const diff = now - d.getTime();
-    const hours = Math.floor(diff / 3600000);
-    if (hours < 1) return 'just now';
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days === 1) return 'yesterday';
-    if (days < 7) return `${days}d ago`;
-    return dateStr.slice(0, 10);
-  } catch {
-    return dateStr.slice(0, 10);
-  }
-}
-
 registerCard({
   type: 'sec-filings',
   title: 'SEC Filings',
@@ -72,7 +43,7 @@ registerCard({
     };
   },
   render(container, data) {
-    const list = items(data.payload);
+    const list = toItems(data.payload);
 
     if (!list.length) {
       container.innerHTML = '<p class="text-sm text-slate-400 p-4">No filings available</p>';
@@ -104,13 +75,13 @@ registerCard({
             </div>
             <span class="text-[10px] text-slate-500">${list.length} filings</span>
           </div>
-          <div class="mt-1 text-[10px] text-slate-500">Peak form: <span class="text-slate-300">${e(peakType)}</span> · ${list.length} filings across ${uniqueDays} day(s)</div>
+          <div class="mt-1 text-[10px] text-slate-500">Peak form: <span class="text-slate-300">${escapeHtml(peakType)}</span> · ${list.length} filings across ${uniqueDays} day(s)</div>
         </div>
         <div class="flex items-center justify-between px-1">
           <div class="flex items-center gap-1.5 flex-wrap">
             ${topTypes.map(([ft, count]) => {
               const s = formStyle(ft);
-              return `<span class="inline-flex items-center gap-1 rounded border ${s.bg} ${s.border} px-1.5 py-0.5 text-[9px] font-bold ${s.text}">${e(ft)} <span class="opacity-70">${count}</span></span>`;
+              return `<span class="inline-flex items-center gap-1 rounded border ${s.bg} ${s.border} px-1.5 py-0.5 text-[9px] font-bold ${s.text}">${escapeHtml(ft)} <span class="opacity-70">${count}</span></span>`;
             }).join('')}
           </div>
           <a href="/explore?mode=data&source=sec_filings" class="text-[10px] text-fin-400 hover:underline flex-shrink-0">All filings \u2192</a>
@@ -128,10 +99,10 @@ registerCard({
             const ago = date ? timeAgo(date) : '';
 
             return `
-              <a href="${e(url)}" class="flex items-center gap-2 rounded-lg bg-fin-800/30 border border-fin-700/20 px-3 py-2 hover:bg-fin-800/50 transition-colors no-underline group">
-                <span class="flex-shrink-0 inline-flex items-center rounded border ${s.bg} ${s.border} px-1.5 py-0.5 text-[10px] font-bold ${s.text} tracking-wide min-w-[40px] justify-center">${e(formType)}</span>
-                <span class="flex-1 text-sm text-slate-200 font-medium truncate group-hover:text-fin-400 transition-colors">${e(company)}</span>
-                <span class="flex-shrink-0 text-[10px] text-slate-500">${e(ago)}</span>
+              <a href="${escapeHtml(url)}" class="flex items-center gap-2 rounded-lg bg-fin-800/30 border border-fin-700/20 px-3 py-2 hover:bg-fin-800/50 transition-colors no-underline group">
+                <span class="flex-shrink-0 inline-flex items-center rounded border ${s.bg} ${s.border} px-1.5 py-0.5 text-[10px] font-bold ${s.text} tracking-wide min-w-[40px] justify-center">${escapeHtml(formType)}</span>
+                <span class="flex-1 text-sm text-slate-200 font-medium truncate group-hover:text-fin-400 transition-colors">${escapeHtml(company)}</span>
+                <span class="flex-shrink-0 text-[10px] text-slate-500">${escapeHtml(ago)}</span>
               </a>`;
           }).join('')}
         </div>

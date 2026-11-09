@@ -199,7 +199,7 @@ export default function VirtualDataTable(props: VirtualDataTableProps): JSX.Elem
                     class="border-t border-fin-800/30 hover:bg-fin-800/20 transition-colors"
                     style={{
                       height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start - virtualizer.getVirtualItems()[0]?.start ?? 0}px)`,
+                      transform: `translateY(${virtualRow.start - (virtualizer.getVirtualItems()[0]?.start ?? 0)}px)`,
                     }}
                   >
                     <For each={row.getVisibleCells()}>

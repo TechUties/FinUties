@@ -3,20 +3,7 @@
  */
 import { registerCard } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as { items?: unknown[] }).items ?? [];
-    if ('data' in raw) return (raw as { data?: unknown[] }).data ?? [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
 
 function fmtPrice(v: unknown): string {
   const n = typeof v === 'number' ? v : parseFloat(String(v ?? '0'));
@@ -52,7 +39,7 @@ registerCard({
     };
   },
   render: (container, data) => {
-    const rows = items(data.payload);
+    const rows = toItems(data.payload);
 
     if (rows.length === 0) {
       container.innerHTML = '<p class="text-sm text-red-400/90 p-4">Failed to load crypto data.</p>';
@@ -89,17 +76,17 @@ registerCard({
               <a href="/explore?q=${encodeURIComponent(sym)}" 
                  class="flex items-center gap-3 rounded-lg bg-fin-800/40 border border-fin-700/30 hover:border-fin-700 px-3 py-2 transition-colors no-underline group">
                 <div class="flex-shrink-0 w-16">
-                  <div class="text-sm font-bold text-slate-200">${e(sym)}</div>
-                  <div class="text-[10px] text-slate-500 truncate">${e(name)}</div>
+                  <div class="text-sm font-bold text-slate-200">${escapeHtml(sym)}</div>
+                  <div class="text-[10px] text-slate-500 truncate">${escapeHtml(name)}</div>
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="h-1.5 rounded-full bg-fin-800/80 overflow-hidden">
                     <div class="h-full rounded-full transition-all" style="width:${barWidth.toFixed(1)}%;background:${barColor}"></div>
                   </div>
-                  ${mcap ? `<div class="text-[9px] text-slate-600 mt-0.5">MCap ${e(fmtMcap(mcap))}</div>` : ''}
+                  ${mcap ? `<div class="text-[9px] text-slate-600 mt-0.5">MCap ${escapeHtml(fmtMcap(mcap))}</div>` : ''}
                 </div>
                 <div class="flex-shrink-0 text-right">
-                  <div class="text-sm font-semibold tabular-nums text-slate-100">${e(fmtPrice(price))}</div>
+                  <div class="text-sm font-semibold tabular-nums text-slate-100">${escapeHtml(fmtPrice(price))}</div>
                   <span class="inline-flex items-center gap-0.5 rounded-full ${changeBg} px-1.5 py-0.5 text-[10px] font-mono ${changeColor}">
                     ${arrow} ${Math.abs(change).toFixed(2)}%
                   </span>

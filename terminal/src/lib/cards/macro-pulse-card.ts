@@ -3,10 +3,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string { return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]); }
-function items(raw: unknown): Record<string, unknown>[] { if (Array.isArray(raw)) return raw; if (raw && typeof raw === 'object') { if ('items' in raw) return (raw as Record<string, unknown>).items as Record<string, unknown>[] ?? []; if ('data' in raw) return (raw as Record<string, unknown>).data as Record<string, unknown>[] ?? []; } return []; }
+import { escapeHtml, toItems } from '../html';
 
 const KPI_COLORS = [
   { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400' },
@@ -37,7 +34,7 @@ registerCard({
   exploreUrl: '/explore?mode=data&source=im_macro_bls_series',
   async fetch(): Promise<CardData> {
     const [blsRes, beaRes] = await Promise.all([apiFetch<unknown>('/api/v1/macro/bls-series?limit=12').catch(() => null), apiFetch<unknown>('/api/v1/macro/bea-series?limit=12').catch(() => null)]);
-    return { payload: { bls: blsRes?.ok ? items(blsRes.data) : [], bea: beaRes?.ok ? items(beaRes.data) : [] }, tokenCost: (blsRes?.tokenCost ?? 0) + (beaRes?.tokenCost ?? 0), creditsRemaining: blsRes?.creditsRemaining ?? beaRes?.creditsRemaining ?? null };
+    return { payload: { bls: blsRes?.ok ? toItems(blsRes.data) : [], bea: beaRes?.ok ? toItems(beaRes.data) : [] }, tokenCost: (blsRes?.tokenCost ?? 0) + (beaRes?.tokenCost ?? 0), creditsRemaining: blsRes?.creditsRemaining ?? beaRes?.creditsRemaining ?? null };
   },
   render(container, data) {
     const p = data.payload as { bls: Record<string, unknown>[]; bea: Record<string, unknown>[] };
@@ -49,7 +46,7 @@ registerCard({
       const up = ch !== null && ch > 0; const dn = ch !== null && ch < 0;
       const arr = up ? '\u25B2' : dn ? '\u25BC' : '';
       const cc = up ? 'text-red-400' : dn ? 'text-emerald-400' : 'text-slate-500';
-      h += '<div class="rounded-lg ' + t.color.bg + ' border ' + t.color.border + ' p-3"><div class="flex items-center gap-1.5"><div class="text-[10px] text-slate-500 uppercase tracking-wider truncate">' + e(t.label) + '</div><span class="text-[8px] ' + t.color.text + ' font-mono">' + e(t.source) + '</span></div><div class="text-xl font-bold tabular-nums text-slate-100 mt-1">' + e(t.value.toLocaleString(undefined, { maximumFractionDigits: 2 })) + '</div><div class="flex items-center gap-2 mt-0.5 text-[9px]">' + (ch !== null ? '<span class="' + cc + ' font-mono">' + arr + ' ' + Math.abs(ch).toFixed(2) + '</span>' : '') + '<span class="text-slate-600">' + e(t.period) + '</span></div></div>';
+      h += '<div class="rounded-lg ' + t.color.bg + ' border ' + t.color.border + ' p-3"><div class="flex items-center gap-1.5"><div class="text-[10px] text-slate-500 uppercase tracking-wider truncate">' + escapeHtml(t.label) + '</div><span class="text-[8px] ' + t.color.text + ' font-mono">' + escapeHtml(t.source) + '</span></div><div class="text-xl font-bold tabular-nums text-slate-100 mt-1">' + escapeHtml(t.value.toLocaleString(undefined, { maximumFractionDigits: 2 })) + '</div><div class="flex items-center gap-2 mt-0.5 text-[9px]">' + (ch !== null ? '<span class="' + cc + ' font-mono">' + arr + ' ' + Math.abs(ch).toFixed(2) + '</span>' : '') + '<span class="text-slate-600">' + escapeHtml(t.period) + '</span></div></div>';
     }
     container.innerHTML = '<div class="space-y-3"><div class="flex items-center justify-end px-1"><a href="/explore?mode=data&source=im_macro_bls_series" class="text-[10px] text-fin-400 hover:underline">All macro data \u2192</a></div><div class="grid grid-cols-2 gap-2">' + h + '</div></div>';
   },

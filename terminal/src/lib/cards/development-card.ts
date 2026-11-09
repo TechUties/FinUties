@@ -4,10 +4,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string { return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]); }
-function items(raw: unknown): Record<string, unknown>[] { if (Array.isArray(raw)) return raw; if (raw && typeof raw === 'object') { if ('items' in raw) return (raw as Record<string, unknown>).items as Record<string, unknown>[] ?? []; if ('data' in raw) return (raw as Record<string, unknown>).data as Record<string, unknown>[] ?? []; } return []; }
+import { escapeHtml, toItems } from '../html';
 
 interface DevRow { country: string; hdi: number | null; governance: number | null; year: string; }
 
@@ -28,7 +25,7 @@ registerCard({
   exploreUrl: '/explore?mode=data&source=fd_undp_hdi',
   async fetch(): Promise<CardData> {
     const [hdiRes, govRes] = await Promise.all([apiFetch<unknown>('/api/v1/data/development/hdi?limit=15').catch(() => null), apiFetch<unknown>('/api/v1/data/development/governance?limit=15').catch(() => null)]);
-    return { payload: { hdi: hdiRes?.ok ? items(hdiRes.data) : [], gov: govRes?.ok ? items(govRes.data) : [] }, tokenCost: (hdiRes?.tokenCost ?? 0) + (govRes?.tokenCost ?? 0), creditsRemaining: hdiRes?.creditsRemaining ?? govRes?.creditsRemaining ?? null };
+    return { payload: { hdi: hdiRes?.ok ? toItems(hdiRes.data) : [], gov: govRes?.ok ? toItems(govRes.data) : [] }, tokenCost: (hdiRes?.tokenCost ?? 0) + (govRes?.tokenCost ?? 0), creditsRemaining: hdiRes?.creditsRemaining ?? govRes?.creditsRemaining ?? null };
   },
   render(container, data) {
     const p = data.payload as { hdi: Record<string, unknown>[]; gov: Record<string, unknown>[] };
@@ -39,7 +36,7 @@ registerCard({
       const pct = r.hdi !== null ? Math.min(r.hdi * 100, 100) : 0;
       const bc = pct >= 80 ? 'bg-emerald-500/40' : pct >= 60 ? 'bg-amber-500/40' : 'bg-red-500/40';
       const tc = pct >= 80 ? 'text-emerald-400' : pct >= 60 ? 'text-amber-400' : 'text-red-400';
-      h += '<div class="flex items-center gap-2 py-1"><span class="text-[11px] text-slate-300 font-medium w-[60px] flex-shrink-0 truncate">' + e(r.country) + '</span><div class="flex-1 h-3.5 bg-fin-800/40 rounded overflow-hidden"><div class="h-full ' + bc + ' rounded" style="width:' + pct.toFixed(1) + '%"></div></div>' + (r.hdi !== null ? '<span class="text-[11px] tabular-nums font-medium ' + tc + ' w-[40px] text-right flex-shrink-0">' + r.hdi.toFixed(3) + '</span>' : '<span class="w-[40px]"></span>') + (r.governance !== null ? '<span class="text-[9px] text-slate-500 w-[30px] text-right flex-shrink-0">' + r.governance.toFixed(0) + '%</span>' : '') + '</div>';
+      h += '<div class="flex items-center gap-2 py-1"><span class="text-[11px] text-slate-300 font-medium w-[60px] flex-shrink-0 truncate">' + escapeHtml(r.country) + '</span><div class="flex-1 h-3.5 bg-fin-800/40 rounded overflow-hidden"><div class="h-full ' + bc + ' rounded" style="width:' + pct.toFixed(1) + '%"></div></div>' + (r.hdi !== null ? '<span class="text-[11px] tabular-nums font-medium ' + tc + ' w-[40px] text-right flex-shrink-0">' + r.hdi.toFixed(3) + '</span>' : '<span class="w-[40px]"></span>') + (r.governance !== null ? '<span class="text-[9px] text-slate-500 w-[30px] text-right flex-shrink-0">' + r.governance.toFixed(0) + '%</span>' : '') + '</div>';
     }
     container.innerHTML = '<div class="space-y-2"><div class="flex items-center justify-between px-1"><div class="flex items-center gap-3 text-[9px] text-slate-600"><span>HDI</span><span>Gov %ile</span></div><a href="/explore?mode=data&source=fd_undp_hdi" class="text-[10px] text-fin-400 hover:underline">Explore \u2192</a></div><div class="space-y-0.5">' + h + '</div></div>';
   },

@@ -3,10 +3,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string { return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]); }
-function items(raw: unknown): Record<string, unknown>[] { if (Array.isArray(raw)) return raw; if (raw && typeof raw === 'object') { if ('items' in raw) return (raw as Record<string, unknown>).items as Record<string, unknown>[] ?? []; if ('data' in raw) return (raw as Record<string, unknown>).data as Record<string, unknown>[] ?? []; } return []; }
+import { escapeHtml, toItems } from '../html';
 
 function fmtTrillions(v: number): string {
   const abs = Math.abs(v);
@@ -29,7 +26,7 @@ registerCard({
     return { payload: res.data, tokenCost: res.tokenCost, creditsRemaining: res.creditsRemaining };
   },
   render(container, data) {
-    const rows = items(data.payload);
+    const rows = toItems(data.payload);
     if (!rows.length) { container.innerHTML = '<p class="text-sm text-slate-500 text-center py-6">No debt data.</p>'; return; }
     const sorted = [...rows].sort((a, b) => String(b.period ?? '').localeCompare(String(a.period ?? '')));
     const current = Number(sorted[0].value ?? 0);
@@ -42,7 +39,7 @@ registerCard({
     const chartId = 'debt-spark-' + Date.now();
     const points = sorted.slice(0, 12).reverse();
 
-    container.innerHTML = '<div class="space-y-3"><div class="flex items-center justify-end px-1"><a href="/explore?mode=data&source=im_macro_treasury-debt-outstanding-series" class="text-[10px] text-fin-400 hover:underline">Explore \u2192</a></div><div class="rounded-lg bg-fin-800/50 border border-fin-700/40 p-4"><div class="text-[10px] text-slate-500 uppercase tracking-wider">Total Outstanding</div><div class="text-3xl font-bold tabular-nums text-slate-100 mt-1">' + e(fmtTrillions(current)) + '</div><div class="flex items-center gap-2 mt-1 text-[10px]">' + (change !== null ? '<span class="' + cc + ' font-mono">' + arrow + ' ' + fmtTrillions(Math.abs(change)) + '</span>' : '') + '<span class="text-slate-600">' + e(latestDate) + '</span></div><div id="' + chartId + '" class="w-full h-[60px] mt-3"></div></div></div>';
+    container.innerHTML = '<div class="space-y-3"><div class="flex items-center justify-end px-1"><a href="/explore?mode=data&source=im_macro_treasury-debt-outstanding-series" class="text-[10px] text-fin-400 hover:underline">Explore \u2192</a></div><div class="rounded-lg bg-fin-800/50 border border-fin-700/40 p-4"><div class="text-[10px] text-slate-500 uppercase tracking-wider">Total Outstanding</div><div class="text-3xl font-bold tabular-nums text-slate-100 mt-1">' + escapeHtml(fmtTrillions(current)) + '</div><div class="flex items-center gap-2 mt-1 text-[10px]">' + (change !== null ? '<span class="' + cc + ' font-mono">' + arrow + ' ' + fmtTrillions(Math.abs(change)) + '</span>' : '') + '<span class="text-slate-600">' + escapeHtml(latestDate) + '</span></div><div id="' + chartId + '" class="w-full h-[60px] mt-3"></div></div></div>';
 
     requestAnimationFrame(() => {
       import('echarts').then(echarts => {

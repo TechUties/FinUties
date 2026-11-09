@@ -12,12 +12,9 @@ import {
   centroidOf, normalizeCountryName, iso3ToMapName, mapNameToIso3,
 } from '../geo-map';
 import { SOURCE_MAP, type SourceDef } from '../source-registry';
+import { escapeHtml } from '../html';
 
 // ─── HTML Escape ─────────────────────────────────────────────────
-
-function esc(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 // ─── Color Maps ──────────────────────────────────────────────────
 
@@ -68,8 +65,8 @@ export function mapNav(action: string): void {
 function tooltipFormatter(params: Record<string, unknown>): string {
   const data = (params as Record<string, unknown>).data as Record<string, unknown> | undefined;
   if (!data?._raw) {
-    const name = esc((params.name as string) ?? '');
-    const val = esc(String(params.value ?? ''));
+    const name = escapeHtml((params.name as string) ?? '');
+    const val = escapeHtml(String(params.value ?? ''));
     if (!name) return '';
     return `<div style="font-weight:600;margin-bottom:4px">${name}</div><div style="color:#94a3b8">Events: <span style="color:#e2e8f0;font-weight:500">${val}</span></div>`;
   }
@@ -77,15 +74,15 @@ function tooltipFormatter(params: Record<string, unknown>): string {
   const srcDef = SOURCE_MAP.get(data._src as string);
   if (!srcDef) return '';
 
-  let html = `<div style="font-weight:600;color:${srcDef.color};margin-bottom:6px;font-size:12px">${esc(srcDef.shortLabel)}</div>`;
+  let html = `<div style="font-weight:600;color:${srcDef.color};margin-bottom:6px;font-size:12px">${escapeHtml(srcDef.shortLabel)}</div>`;
   for (const col of srcDef.columns.filter(c => !c.secondary)) {
     const v = raw[col.key];
     if (v == null || v === '') continue;
     let display: string;
     if (col.type === 'date') display = String(v).slice(0, 16).replace('T', ' ');
     else if (col.type === 'number') display = Number(v).toLocaleString('en-US');
-    else display = esc(String(v));
-    html += `<div style="display:flex;justify-content:space-between;gap:12px;line-height:1.6"><span style="color:#64748b">${esc(col.label)}</span><span style="color:#e2e8f0">${display}${col.unit ? ' ' + esc(col.unit) : ''}</span></div>`;
+    else display = escapeHtml(String(v));
+    html += `<div style="display:flex;justify-content:space-between;gap:12px;line-height:1.6"><span style="color:#64748b">${escapeHtml(col.label)}</span><span style="color:#e2e8f0">${display}${col.unit ? ' ' + escapeHtml(col.unit) : ''}</span></div>`;
   }
   return html;
 }

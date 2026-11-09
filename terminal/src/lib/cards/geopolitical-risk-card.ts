@@ -3,20 +3,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as Record<string, unknown>).items || [];
-    if ('data' in raw) return (raw as Record<string, unknown>).data || [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
 
 function riskLevel(val: number): { label: string; color: string; bgColor: string } {
   if (val >= 200) return { label: 'Extreme', color: '#dc2626', bgColor: 'bg-red-500/15' };
@@ -46,7 +33,7 @@ registerCard({
   },
 
   render(container, data) {
-    const raw = items(data.payload);
+    const raw = toItems(data.payload);
 
     if (raw.length === 0) {
       container.innerHTML = '<p class="text-sm text-slate-500 text-center py-6">GPR data unavailable.</p>';
@@ -88,17 +75,17 @@ registerCard({
         </div>
         <div class="rounded-lg bg-fin-800/50 border border-fin-700/40 p-4 text-center">
           <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">GPR Index</div>
-          <div class="text-3xl font-bold tabular-nums text-slate-100">${e(current.toFixed(1))}</div>
+          <div class="text-3xl font-bold tabular-nums text-slate-100">${escapeHtml(current.toFixed(1))}</div>
           <div class="inline-flex items-center gap-1 mt-1 rounded-full ${risk.bgColor} px-2.5 py-0.5">
             <span class="w-2 h-2 rounded-full" style="background:${risk.color}"></span>
-            <span class="text-[11px] font-semibold" style="color:${risk.color}">${e(risk.label)}</span>
+            <span class="text-[11px] font-semibold" style="color:${risk.color}">${escapeHtml(risk.label)}</span>
           </div>
           <div class="mt-2 h-2 rounded-full bg-fin-800 overflow-hidden mx-auto max-w-[200px]">
             <div class="h-full rounded-full transition-all" style="width:${gaugePercent.toFixed(1)}%;background:${risk.color}"></div>
           </div>
           <div class="flex items-center justify-center gap-2 mt-2">
             ${change !== null ? `<span class="text-[10px] font-mono ${changeColor}">${arrow} ${Math.abs(change).toFixed(1)}</span>` : ''}
-            <span class="text-[9px] text-slate-600">${e(latestDate)}</span>
+            <span class="text-[9px] text-slate-600">${escapeHtml(latestDate)}</span>
           </div>
         </div>
         <div id="${chartId}" class="w-full h-[50px]"></div>

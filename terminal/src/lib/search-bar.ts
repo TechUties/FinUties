@@ -8,6 +8,7 @@
  */
 
 import { apiFetch } from './api-client';
+import { escapeHtml } from './html';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -26,15 +27,6 @@ interface SuggestResponse {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function esc(s: unknown): string {
-  const str = String(s ?? '');
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number): T {
   let id: ReturnType<typeof setTimeout> | null = null;
@@ -144,15 +136,15 @@ export function initSearchBar(container: HTMLElement): void {
 
       let primary = '';
       if (e.symbol && !/^CUSIP_/i.test(e.symbol)) {
-        primary = '<span class="font-semibold text-slate-100">' + esc(e.symbol) + '</span> <span class="text-slate-300">' + esc(e.name) + '</span>';
+        primary = '<span class="font-semibold text-slate-100">' + escapeHtml(e.symbol) + '</span> <span class="text-slate-300">' + escapeHtml(e.name) + '</span>';
       } else {
-        primary = '<span class="text-slate-200">' + esc(e.name) + '</span>';
+        primary = '<span class="text-slate-200">' + escapeHtml(e.name) + '</span>';
       }
 
       const meta: string[] = [];
-      if (e.exchange) meta.push(esc(e.exchange));
-      if (e.cik) meta.push('CIK ' + esc(e.cik));
-      if (isInvestor && e.investor_type) meta.push(esc(e.investor_type));
+      if (e.exchange) meta.push(escapeHtml(e.exchange));
+      if (e.cik) meta.push('CIK ' + escapeHtml(e.cik));
+      if (isInvestor && e.investor_type) meta.push(escapeHtml(e.investor_type));
       const secondary = meta.length > 0
         ? '<div class="mt-0.5 text-[10px] text-slate-500 truncate">' + meta.join(' \u00b7 ') + '</div>'
         : '';

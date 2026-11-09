@@ -4,10 +4,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string { return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]); }
-function items(raw: unknown): Record<string, unknown>[] { if (Array.isArray(raw)) return raw; if (raw && typeof raw === 'object') { if ('items' in raw) return (raw as Record<string, unknown>).items as Record<string, unknown>[] ?? []; if ('data' in raw) return (raw as Record<string, unknown>).data as Record<string, unknown>[] ?? []; } return []; }
+import { escapeHtml, toItems } from '../html';
 
 interface ImfRow {
   country: string;
@@ -42,7 +39,7 @@ registerCard({
   },
 
   render(container, data) {
-    const rows = parseRows(items(data.payload));
+    const rows = parseRows(toItems(data.payload));
     if (rows.length === 0) {
       container.innerHTML = '<p class="text-sm text-slate-500 text-center py-6">No IMF data.</p>';
       return;
@@ -57,12 +54,12 @@ registerCard({
       const valColor = r.value >= 0 ? 'text-emerald-400' : 'text-red-400';
 
       html += '<div class="flex items-center gap-2 py-1">'
-        + '<span class="text-[11px] text-slate-300 font-medium w-[50px] flex-shrink-0 truncate">' + e(r.country) + '</span>'
+        + '<span class="text-[11px] text-slate-300 font-medium w-[50px] flex-shrink-0 truncate">' + escapeHtml(r.country) + '</span>'
         + '<div class="flex-1 h-4 bg-fin-800/40 rounded overflow-hidden">'
         + '<div class="h-full ' + barColor + ' rounded" style="width:' + pct.toFixed(1) + '%"></div>'
         + '</div>'
-        + '<span class="text-[11px] tabular-nums font-medium ' + valColor + ' w-[50px] text-right flex-shrink-0">' + e(r.value.toFixed(1)) + '</span>'
-        + '<span class="text-[9px] text-slate-600 w-[30px] flex-shrink-0">' + e(r.year) + '</span>'
+        + '<span class="text-[11px] tabular-nums font-medium ' + valColor + ' w-[50px] text-right flex-shrink-0">' + escapeHtml(r.value.toFixed(1)) + '</span>'
+        + '<span class="text-[9px] text-slate-600 w-[30px] flex-shrink-0">' + escapeHtml(r.year) + '</span>'
         + '</div>';
     }
 

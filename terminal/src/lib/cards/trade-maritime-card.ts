@@ -3,20 +3,7 @@
  */
 import { registerCard, type CardData } from '../card-registry';
 import { apiFetch } from '../api-client';
-
-const _E: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-function e(s: string): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => _E[c]);
-}
-
-function items(raw: unknown): Record<string, unknown>[] {
-  if (Array.isArray(raw)) return raw;
-  if (raw && typeof raw === 'object') {
-    if ('items' in raw) return (raw as Record<string, unknown>).items as Record<string, unknown>[] ?? [];
-    if ('data' in raw) return (raw as Record<string, unknown>).data as Record<string, unknown>[] ?? [];
-  }
-  return [];
-}
+import { escapeHtml, toItems } from '../html';
 
 function fmtValue(v: number): string {
   const abs = Math.abs(v);
@@ -45,8 +32,8 @@ registerCard({
     const credits = tradeRes?.creditsRemaining ?? maritimeRes?.creditsRemaining ?? null;
     return {
       payload: {
-        trade: tradeRes?.ok ? items(tradeRes.data) : [],
-        maritime: maritimeRes?.ok ? items(maritimeRes.data) : [],
+        trade: tradeRes?.ok ? toItems(tradeRes.data) : [],
+        maritime: maritimeRes?.ok ? toItems(maritimeRes.data) : [],
       },
       tokenCost: totalCost,
       creditsRemaining: credits,
@@ -83,12 +70,12 @@ registerCard({
       const flowColor = flow.toLowerCase().includes('export') ? 'text-emerald-400' : 'text-blue-400';
 
       tradeHtml += '<div class="flex items-center gap-2 rounded-lg bg-fin-800/30 border border-fin-700/20 px-3 py-2">'
-        + '<span class="text-sm font-medium text-slate-200 min-w-[40px]">' + e(reporter) + '</span>'
+        + '<span class="text-sm font-medium text-slate-200 min-w-[40px]">' + escapeHtml(reporter) + '</span>'
         + '<svg class="w-3 h-3 text-slate-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>'
-        + '<span class="text-sm text-slate-300 min-w-[40px]">' + e(partner) + '</span>'
-        + '<span class="flex-1 text-right tabular-nums text-sm text-slate-100 font-medium">' + e(fmtValue(val)) + '</span>'
-        + '<span class="text-[9px] ' + flowColor + ' font-mono uppercase">' + e(flow) + '</span>'
-        + '<span class="text-[9px] text-slate-600">' + e(year) + '</span>'
+        + '<span class="text-sm text-slate-300 min-w-[40px]">' + escapeHtml(partner) + '</span>'
+        + '<span class="flex-1 text-right tabular-nums text-sm text-slate-100 font-medium">' + escapeHtml(fmtValue(val)) + '</span>'
+        + '<span class="text-[9px] ' + flowColor + ' font-mono uppercase">' + escapeHtml(flow) + '</span>'
+        + '<span class="text-[9px] text-slate-600">' + escapeHtml(year) + '</span>'
         + '</div>';
     }
 
@@ -102,11 +89,11 @@ registerCard({
 
       maritimeHtml += '<div class="flex items-center gap-2 text-[11px] py-1">'
         + '<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>'
-        + '<span class="text-slate-200 font-medium truncate">' + e(vessel) + '</span>'
-        + (flag ? '<span class="text-slate-600">' + e(flag) + '</span>' : '')
-        + '<span class="text-cyan-400/70 text-[9px] uppercase">' + e(evType) + '</span>'
-        + (port ? '<span class="text-slate-500">' + e(port) + '</span>' : '')
-        + '<span class="text-slate-600 ml-auto flex-shrink-0">' + e(date) + '</span>'
+        + '<span class="text-slate-200 font-medium truncate">' + escapeHtml(vessel) + '</span>'
+        + (flag ? '<span class="text-slate-600">' + escapeHtml(flag) + '</span>' : '')
+        + '<span class="text-cyan-400/70 text-[9px] uppercase">' + escapeHtml(evType) + '</span>'
+        + (port ? '<span class="text-slate-500">' + escapeHtml(port) + '</span>' : '')
+        + '<span class="text-slate-600 ml-auto flex-shrink-0">' + escapeHtml(date) + '</span>'
         + '</div>';
     }
 
@@ -114,9 +101,9 @@ registerCard({
       + '<div class="rounded-lg border border-fin-700/30 bg-fin-800/25 px-3 py-2">'
       + '<div class="flex items-end justify-between">'
       + '<div><div class="text-[10px] text-slate-500 uppercase tracking-wider">Flow Snapshot</div>'
-      + '<div class="text-xl font-mono tabular-nums font-bold text-slate-200">' + e(fmtValue(totalTradeValue)) + '</div></div>'
+      + '<div class="text-xl font-mono tabular-nums font-bold text-slate-200">' + escapeHtml(fmtValue(totalTradeValue)) + '</div></div>'
       + '<span class="text-[10px] text-slate-500">' + trade.length + ' routes</span></div>'
-      + '<div class="mt-1 text-[10px] text-slate-500">' + (topRoute ? e(String(topRoute.reporter_code ?? '') + '→' + String(topRoute.partner_code ?? '')) + ' top route · ' + e(topRouteShare.toFixed(1)) + '%' : 'No top route') + '</div>'
+      + '<div class="mt-1 text-[10px] text-slate-500">' + (topRoute ? escapeHtml(String(topRoute.reporter_code ?? '') + '→' + String(topRoute.partner_code ?? '')) + ' top route · ' + escapeHtml(topRouteShare.toFixed(1)) + '%' : 'No top route') + '</div>'
       + '<div class="mt-2 h-1.5 w-full rounded bg-fin-900/70 overflow-hidden flex">'
       + '<span class="bg-emerald-400" style="width:' + (trade.length ? ((exportCount / trade.length) * 100).toFixed(1) : '0') + '%"></span>'
       + '<span class="bg-blue-400" style="width:' + (trade.length ? ((importCount / trade.length) * 100).toFixed(1) : '0') + '%"></span>'

@@ -8,10 +8,7 @@ import {
   visibleSources,
 } from './state';
 import { primaryColumns, type SourceDef, type ColumnDef } from '../source-registry';
-
-function esc(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { escapeHtml } from '../html';
 
 // ─── Column Merge ────────────────────────────────────────────────
 
@@ -122,7 +119,7 @@ export function updateTable(): void {
   }
 
   tableHead.innerHTML = '<tr>' + columns.map(col =>
-    `<th data-key="${col.key}" class="${state.tableSortKey === col.key ? 'sorted' : ''}">${esc(col.label)}${col.unit ? ' <span class="text-slate-600">(' + esc(col.unit) + ')</span>' : ''} <span class="sort-icon">${state.tableSortKey === col.key ? (state.tableSortAsc ? '\u25B2' : '\u25BC') : '\u21C5'}</span></th>`,
+    `<th data-key="${col.key}" class="${state.tableSortKey === col.key ? 'sorted' : ''}">${escapeHtml(col.label)}${col.unit ? ' <span class="text-slate-600">(' + escapeHtml(col.unit) + ')</span>' : ''} <span class="sort-icon">${state.tableSortKey === col.key ? (state.tableSortAsc ? '\u25B2' : '\u25BC') : '\u21C5'}</span></th>`,
   ).join('') + '</tr>';
 
   // Add an "Explore" link column
@@ -137,17 +134,17 @@ export function updateTable(): void {
       if (col.key === '_explore') {
         const exploreHref = buildExploreLink(src, row);
         html += exploreHref
-          ? `<td><a href="${esc(exploreHref)}" class="text-fin-400 hover:underline text-[10px] whitespace-nowrap" title="Open in Explorer">\u2197</a></td>`
+          ? `<td><a href="${escapeHtml(exploreHref)}" class="text-fin-400 hover:underline text-[10px] whitespace-nowrap" title="Open in Explorer">\u2197</a></td>`
           : '<td></td>';
         continue;
       }
       const val = col.key === '_source' ? src.shortLabel : row[col.key];
       let cell: string;
       if (val == null || val === '') cell = '<span class="text-slate-700">\u2014</span>';
-      else if (col.type === 'date') cell = esc(String(val).slice(0, 16).replace('T', ' '));
+      else if (col.type === 'date') cell = escapeHtml(String(val).slice(0, 16).replace('T', ' '));
       else if (col.type === 'number') cell = Number(val).toLocaleString('en-US');
-      else if (col.type === 'badge') cell = `<span class="badge" style="background:${src.color}20;color:${src.color}">${esc(String(val))}</span>`;
-      else cell = esc(String(val));
+      else if (col.type === 'badge') cell = `<span class="badge" style="background:${src.color}20;color:${src.color}">${escapeHtml(String(val))}</span>`;
+      else cell = escapeHtml(String(val));
       html += `<td>${cell}</td>`;
     }
     html += '</tr>';

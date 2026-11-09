@@ -6,6 +6,7 @@
  * - Use the same key across card definitions and UI toggles.
  * - Keep icon paths 24x24 stroke-based for visual consistency.
  */
+import { escapeHtml } from './html';
 
 export const VIEW_ICONS: Record<string, string> = {
   list: '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>',
@@ -16,8 +17,6 @@ export const VIEW_ICONS: Record<string, string> = {
   detail: '<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>',
 };
 
-const _ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
-export function esc(s: string): string {
-  return String(s ?? '').replace(/[&<>"']/g, (c) => _ESC[c]);
-}
+/** HTML-escape a value. Kept under this name for existing section and plugin code; new code imports `escapeHtml` from `lib/html.ts`. */
+export const esc = escapeHtml;
